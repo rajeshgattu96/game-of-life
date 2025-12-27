@@ -1,41 +1,41 @@
-name: Deploy of Game of life
+name: Deploy Game of Life
+
 on:
   push:
     branches:
       - main
   pull_request:
   workflow_dispatch:
+
 jobs:
   build_deploy_golife:
     runs-on: ubuntu-latest
-    #runs-on: self-hosted
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        
-      - name: set up jdk 1.8
+
+      - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '8'
-          
-    #  - name: Install Maven
-     #   run: sudo yum install maven -y
-        
-      - name: Cache Maven repo
+
+      - name: Cache Maven repository
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            &{{ runner.os }}-maven-
-      - name: build with Maven
+            ${{ runner.os }}-maven-
+
+      - name: Build with Maven
         run: mvn clean package
-        
-      - name: Deploy WAR to tomcat
+
+      - name: Deploy WAR to Tomcat
         run: |
           WAR_FILE=$(ls gameoflife-web/target/*.war | head -n 1)
           APP_NAME=myapp
-          curl -u "{{ secrets.TOMCAT_USERNAME }}:${{ secrets.TOMCAT_PASSWORD }}" \
+          curl -v -u "${{ secrets.TOMCAT_USERNAME }}:${{ secrets.TOMCAT_PASSWORD }}" \
             --upload-file "$WAR_FILE" \
             "http://${{ secrets.TOMCAT_HOST }}:8081/manager/text/deploy?path=/$APP_NAME&update=true"
